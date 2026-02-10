@@ -18,6 +18,8 @@ spec:
         env:
         - name: DATABASE_URL
           value: "postgresql://postgres:postgres@postgres:5432/todo"
+        - name: BUG_MODE
+          value: "false"
         ports:
         - containerPort: 8000
 ---
