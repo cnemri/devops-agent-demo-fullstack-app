@@ -1,0 +1,10 @@
+# fullstack_app/.gitignore
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+dist/
+build/
+.infra/
