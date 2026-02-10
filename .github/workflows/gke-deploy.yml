@@ -1,0 +1,63 @@
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: todo-cluster
+  GKE_REGION: us-central1
+  IMAGE_BACKEND: gcr.io/${{ secrets.GCP_PROJECT_ID }}/todo-backend
+  IMAGE_FRONTEND: gcr.io/${{ secrets.GCP_PROJECT_ID }}/todo-frontend
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # 1. Authenticate to GCP
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    # 2. Setup gcloud and get GKE credentials
+    - name: Get GKE Credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_REGION }}
+
+    # 3. Configure Docker for GCR
+    - name: Configure Docker
+      run: gcloud auth configure-docker --quiet
+
+    # 4. Build and Push Backend
+    - name: Build & Push Backend
+      run: |
+        docker build -t $IMAGE_BACKEND:$GITHUB_SHA ./backend
+        docker push $IMAGE_BACKEND:$GITHUB_SHA
+
+    # 5. Build and Push Frontend
+    - name: Build & Push Frontend
+      run: |
+        docker build -t $IMAGE_FRONTEND:$GITHUB_SHA ./frontend
+        docker push $IMAGE_FRONTEND:$GITHUB_SHA
+
+    # 6. Update K8s manifests with the new image tag
+    - name: Update Manifests
+      run: |
+        sed -i "s|TODO_BACKEND_IMAGE|$IMAGE_BACKEND:$GITHUB_SHA|g" k8s/backend.yaml
+        sed -i "s|TODO_FRONTEND_IMAGE|$IMAGE_FRONTEND:$GITHUB_SHA|g" k8s/frontend.yaml
+
+    # 7. Deploy to GKE
+    - name: Deploy
+      run: |
+        kubectl apply -f k8s/
+        kubectl rollout status deployment/backend
+        kubectl rollout status deployment/frontend
