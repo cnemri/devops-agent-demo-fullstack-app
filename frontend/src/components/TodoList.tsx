@@ -42,7 +42,7 @@ export default function TodoList() {
 
     return (
         <div className="max-w-2xl mx-auto mt-10 p-6 bg-gray-50 dark:bg-gray-900 rounded-xl shadow-lg">
-            <h1 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">Todo App</h1>
+            <h1 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">MCP Conference Todo App</h1>
 
             <form onSubmit={handleAddTodo} className="mb-8 space-y-4">
                 <div>
